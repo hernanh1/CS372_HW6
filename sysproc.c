@@ -93,39 +93,15 @@ sys_uptime(void)
 int
 sys_clone(void)
 {
-  int i, pid;
-  struct proc *np;
-  struct proc *curproc = myproc();
+  int fcn;
+  int arg1, arg2;
+  int stack;
 
-  // Allocate process.
-  if((np = allocproc()) == 0){
+  if(argint(0, &fcn)<0 || argint(0, &arg1)<0 || argint(0, &arg2)<0 || argint(0, &stack)<0) {
     return -1;
   }
 
-  np->state = UNUSED;
-  np->pgdir = curproc->pgdir; //Both threads should share the same Pgdir, as they need to share the same data.
-  np->kstack = curproc->kstack; //Both threads should share the same kstack.
-
-  np->sz = curproc->sz;
-  np->parent = curproc;
-  *np->tf = *curproc->tf;
-
-  // Clear %eax so that fork returns 0 in the child.
-  np->tf->eax = 0;
-
-  for(i = 0; i < NOFILE; i++)
-    if(curproc->ofile[i])
-      np->ofile[i] = filedup(curproc->ofile[i]);
-  np->cwd = idup(curproc->cwd);
-
-  safestrcpy(np->name, curproc->name, sizeof(curproc->name));
-  pid = np->pid;
-
-  acquire(&ptable.lock);
-  np->state = RUNNABLE;
-  release(&ptable.lock);
-
-  return pid;
+  return clone((void*)fcn, (void*)arg1, (void*)arg2, (void*)stack);
 }
 
 int sys_join(void)
